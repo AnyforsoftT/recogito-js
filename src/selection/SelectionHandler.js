@@ -19,7 +19,25 @@ const contains = (containerEl, maybeChildEl) => {
     // Things can be so simple, unless you're in IE
     return containerEl.contains(maybeChildEl);
   }
-}
+};
+
+// Function to clear selection for all browsers
+const clearBrowserSelection = (document, emitFn) => {
+  const selection = document.getSelection();
+
+  if (selection) {
+    if (selection.empty) {  // Chrome and similar browsers
+      selection.empty();
+      emitFn();  // Emit deselect event
+    } else if (selection.removeAllRanges) {  // Firefox, Safari, etc.
+      selection.removeAllRanges();
+      emitFn();  // Emit deselect event
+    } else if (document.selection) {  // Internet Explorer
+      document.selection.empty();
+      emitFn();  // Emit deselect event
+    }
+  }
+};
 
 export default class SelectionHandler extends EventEmitter {
 
@@ -113,16 +131,7 @@ export default class SelectionHandler extends EventEmitter {
     if (this.isEnabled) {
       this._currentSelection = null;
 
-      // Remove native selection, if any
-      if (this.document.getSelection) {
-        if (this.document.getSelection().empty) {  // Chrome
-          this.document.getSelection().empty();
-        } else if (this.document.getSelection().removeAllRanges) {  // Firefox
-          this.document.getSelection().removeAllRanges();
-        }
-      } else if (this.document.selection) {  // IE?
-        this.document.selection.empty();
-      }
+      clearBrowserSelection(this.document, () => this.emit('select', {}));
 
       this.el.classList.remove('r6o-hide-selection');
 
