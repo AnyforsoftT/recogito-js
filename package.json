@@ -6,7 +6,8 @@
   "scripts": {
     "start": "webpack serve --open --mode=development",
     "build": "webpack --mode=production",
-    "build-polyfills": "webpack --mode=production --config webpack.polyfills.js"
+    "build-polyfills": "webpack --mode=production --config webpack.polyfills.js",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
