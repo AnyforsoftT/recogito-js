@@ -16,7 +16,6 @@ import '@recogito/recogito-client-core/themes/default';
  * externally visible JavaScript API.
  */
 export class Recogito {
-  static instances = [];
 
   constructor(config) {
     // API calls to this instance are forwarded through a ref
@@ -27,18 +26,6 @@ export class Recogito {
 
     // Environment settings container
     this._environment = createEnvironment();
-
-    // Register this instance
-    Recogito.instances.push(this);
-
-    // Clean up when this instance is destroyed
-    const originalDestroy = this.destroy.bind(this);
-    this.destroy = () => {
-      // Remove this instance from the registry
-      Recogito.instances = Recogito.instances.filter(instance => instance !== this);
-      originalDestroy();
-    };
-
 
     // The content element (which contains the text we want to annotate)
     // is wrapped in a DIV ('wrapperEl'). The application container DIV,
@@ -87,7 +74,6 @@ export class Recogito {
         contentEl={contentEl}
         wrapperEl={this._wrapperEl}
         config={config}
-        owner={this}
         onAnnotationSelected={this.handleAnnotationSelected}
         onAnnotationCreated={this.handleAnnotationCreated}
         onAnnotationUpdated={this.handleAnnotationUpdated}
@@ -127,17 +113,6 @@ export class Recogito {
 
   clearAuthInfo = () =>
     this._environment.user = null;
-
-  clearSelection = () =>
-      this._app.current.clearSelection();
-
-  clearOtherSelections = () => {
-    Recogito.instances.forEach(instance => {
-      if (instance !== this) {
-        instance.clearSelection();
-      }
-    });
-  }
 
   destroy = () => {
     ReactDOM.unmountComponentAtNode(this._appContainerEl);

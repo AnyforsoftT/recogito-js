@@ -41,7 +41,7 @@ const clearBrowserSelection = (document, emitFn) => {
 
 export default class SelectionHandler extends EventEmitter {
 
-  constructor(element, highlighter, readOnly, owner) {
+  constructor(element, highlighter, readOnly) {
     super();
 
     this.el = element;
@@ -50,12 +50,13 @@ export default class SelectionHandler extends EventEmitter {
 
     this.isEnabled = true;
 
-    this.owner = owner;
-
     this.document = element.ownerDocument;
 
     element.addEventListener('mousedown', this._onMouseDown);
     element.addEventListener('mouseup', this._onMouseUp);
+
+    // Add event listener for clicks outside the content element
+    this.document.addEventListener('mousedown', this._onDocumentMouseDown);
 
     if (IS_TOUCH)
       enableTouch(element, this._onMouseUp);
@@ -69,12 +70,16 @@ export default class SelectionHandler extends EventEmitter {
     this.isEnabled = enabled;
   }
 
+  destroy() {
+    this.el.removeEventListener('mousedown', this._onMouseDown);
+    this.el.removeEventListener('mouseup', this._onMouseUp);
+    this.document.removeEventListener('mousedown', this._onDocumentMouseDown);
+  }
+
   _onMouseDown = evt => {
     // left click only
     if (evt.button === 0) {
       this.clearSelection();
-      // Before handling the new selection, clear selections in other instances too
-      this.owner?.clearOtherSelections();
     }
   }
 
@@ -125,6 +130,14 @@ export default class SelectionHandler extends EventEmitter {
       }
     }
   }
+
+  _onDocumentMouseDown = (evt) => {
+    if (this.isEnabled) {
+      // Check if the click target is outside the content element
+      if (!this.el.contains(evt.target)) {
+        this.clearSelection();
+      }
+    }}
 
   _hideNativeSelection = () => {
     this.el.classList.add('r6o-hide-selection');

@@ -51,7 +51,7 @@ export default class TextAnnotator extends Component {
   componentDidMount() {
     this.highlighter = new Highlighter(this.props.contentEl, this.props.config.formatter);
 
-    this.selectionHandler = new SelectionHandler(this.props.contentEl, this.highlighter, this.props.config.readOnly, this.props.owner);
+    this.selectionHandler = new SelectionHandler(this.props.contentEl, this.highlighter, this.props.config.readOnly);
     this.selectionHandler.on('select', this.handleSelect);
 
     this.relationsLayer = new RelationsLayer(this.props.contentEl);
@@ -65,6 +65,9 @@ export default class TextAnnotator extends Component {
 
   componentWillUnmount() {
     document.removeEventListener('keydown', this.handleEscape);
+
+    // Destroy the selection handler to clean up event listeners
+    this.selectionHandler.destroy();
   }
 
   onChanged = () => {
@@ -328,10 +331,6 @@ export default class TextAnnotator extends Component {
     return this.highlighter.init(clones).then(() =>
       this.relationsLayer.init(clones));
   }
-
-  clearSelection = () => {
-    this.selectionHandler.clearSelection();
-  };
 
   setMode = mode => {
     if (mode === 'RELATIONS') {
