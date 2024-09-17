@@ -96,10 +96,7 @@ export default class SelectionHandler extends EventEmitter {
       } else if (!this.readOnly) {
         const selectedRange = trimRange(selection.getRangeAt(0));
 
-        // Make sure the selection is entirely inside this.el
-        const { commonAncestorContainer } = selectedRange;
-
-        if (contains(this.el, commonAncestorContainer)) {
+        if (contains(this.el, selectedRange?.commonAncestorContainer)) {
           const stub = rangeToSelection(selectedRange, this.el);
 
           const spans = this.highlighter.wrapRange(selectedRange);
@@ -107,7 +104,8 @@ export default class SelectionHandler extends EventEmitter {
 
           this._hideNativeSelection();
 
-          const exactOverlaps = getExactOverlaps(stub, spans);
+
+        const exactOverlaps = getExactOverlaps(stub, spans)
           if (exactOverlaps.length > 0) {
             // User selected existing - reuse top-most original to avoid stratification
             const top = exactOverlaps[0];

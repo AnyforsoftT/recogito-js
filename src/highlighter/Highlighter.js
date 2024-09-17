@@ -9,14 +9,14 @@ export default class Highlighter {
     this.formatter = formatter;
   }
 
-  init = annotations => new Promise((resolve, _) => {    
+  init = annotations => new Promise((resolve, _) => {
     const startTime = performance.now();
 
     // Discard all annotations without a TextPositionSelector
     const highlights = annotations.filter(a => a.selector('TextPositionSelector'));
 
     // Sorting bottom to top significantly speeds things up,
-    // because walkTextNodes will have a lot less to walk 
+    // because walkTextNodes will have a lot less to walk
     highlights.sort((a, b) => b.start - a.start);
 
     // Render loop
@@ -98,16 +98,16 @@ export default class Highlighter {
     this.el.normalize();
   }
 
-  /** 
-   * Forces a new ID on the annotation with the given ID. This method handles 
-   * the ID update within the Highlighter ONLY. It's up to the application to 
-   * keep the RelationsLayer in sync! 
-   * 
+  /**
+   * Forces a new ID on the annotation with the given ID. This method handles
+   * the ID update within the Highlighter ONLY. It's up to the application to
+   * keep the RelationsLayer in sync!
+   *
    * @returns the updated annotation for convenience
    */
-  overrideId = (originalId, forcedId) => {    
+  overrideId = (originalId, forcedId) => {
     const allSpans = document.querySelectorAll(`.r6o-annotation[data-id="${originalId}"]`);
-    const annotation = allSpans[0].annotation; 
+    const annotation = allSpans[0].annotation;
 
     const updatedAnnotation = annotation.clone({ id : forcedId });
     this.bindAnnotation(updatedAnnotation, allSpans);
@@ -139,10 +139,10 @@ export default class Highlighter {
    * or an object. If a string is returned, this will be appended to the
    * annotation element CSS class list. Otherwise, the object can have the
    * following properties:
-   * 
+   *
    * - 'className' added to the CSS class list
    * - 'data-*' added as data attributes
-   * - 'style' a list of CSS styles (in the form of a string) 
+   * - 'style' a list of CSS styles (in the form of a string)
    */
   applyStyles = (annotation, spans) => {
     let extraClasses = '';
@@ -164,7 +164,7 @@ export default class Highlighter {
         if (format.hasOwnProperty(key) && key.startsWith('data-')) {
           spans.forEach(span => span.setAttribute(key, format[key]));
         }
-      }  
+      }
     }
     // apply extra classes if there are any; ensure .r6o-annotation added regardless
     spans.forEach(span => span.className = `r6o-annotation ${extraClasses}`.trim());
@@ -184,7 +184,7 @@ export default class Highlighter {
     var runningOffset = 0;
     let n = ni.nextNode();
     while (n != null) {
-      runningOffset += n.textContent.length;
+      runningOffset += n.textContent?.length;
       nodes.push(n);
       if (runningOffset > stopOffset) {
         break;
@@ -200,7 +200,7 @@ export default class Highlighter {
     const textNodeProps = (() => {
       let start = 0;
       return this.walkTextNodes(this.el, maxOffset).map(function(node) {
-        var nodeLength = node.textContent.length,
+        var nodeLength = node.textContent?.length,
             nodeProps = { node: node, start: start, end: start + nodeLength };
 
         start += nodeLength;
@@ -264,10 +264,18 @@ export default class Highlighter {
   wrapRange = (range, commonRoot) => {
     const root = commonRoot ? commonRoot : this.el;
 
-    const surround = range => {
-      var wrapper = document.createElement('SPAN');
-      range.surroundContents(wrapper);
-      return wrapper;
+    const surround = (range) => {
+      const wrapper = document.createElement('SPAN');
+      try {
+        range.surroundContents(wrapper);
+        return wrapper;
+      } catch (error) {
+        // If surroundContents fails, fall back to an alternative method
+        const fragment = range.extractContents();
+        wrapper.appendChild(fragment);
+        range.insertNode(wrapper);
+        return wrapper
+      }
     };
 
     if (range.startContainer === range.endContainer) {
