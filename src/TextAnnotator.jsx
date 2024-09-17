@@ -51,7 +51,7 @@ export default class TextAnnotator extends Component {
   componentDidMount() {
     this.highlighter = new Highlighter(this.props.contentEl, this.props.config.formatter);
 
-    this.selectionHandler = new SelectionHandler(this.props.contentEl, this.highlighter, this.props.config.readOnly);
+    this.selectionHandler = new SelectionHandler(this.props.contentEl, this.highlighter, this.props.config.readOnly, this.props.owner);
     this.selectionHandler.on('select', this.handleSelect);
 
     this.relationsLayer = new RelationsLayer(this.props.contentEl);
@@ -68,7 +68,7 @@ export default class TextAnnotator extends Component {
   }
 
   onChanged = () => {
-    // Disable selection outside of the editor 
+    // Disable selection outside of the editor
     // when user makes the first change
     this.selectionHandler.enabled = false;
   }
@@ -328,6 +328,10 @@ export default class TextAnnotator extends Component {
     return this.highlighter.init(clones).then(() =>
       this.relationsLayer.init(clones));
   }
+
+  clearSelection = () => {
+    this.selectionHandler.clearSelection();
+  };
 
   setMode = mode => {
     if (mode === 'RELATIONS') {

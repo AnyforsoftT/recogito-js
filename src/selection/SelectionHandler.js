@@ -41,7 +41,7 @@ const clearBrowserSelection = (document, emitFn) => {
 
 export default class SelectionHandler extends EventEmitter {
 
-  constructor(element, highlighter, readOnly) {
+  constructor(element, highlighter, readOnly, owner) {
     super();
 
     this.el = element;
@@ -49,6 +49,8 @@ export default class SelectionHandler extends EventEmitter {
     this.readOnly = readOnly;
 
     this.isEnabled = true;
+
+    this.owner = owner;
 
     this.document = element.ownerDocument;
 
@@ -69,8 +71,11 @@ export default class SelectionHandler extends EventEmitter {
 
   _onMouseDown = evt => {
     // left click only
-    if (evt.button === 0)
+    if (evt.button === 0) {
       this.clearSelection();
+      // Before handling the new selection, clear selections in other instances too
+      this.owner?.clearOtherSelections();
+    }
   }
 
   _onMouseUp = evt => {
