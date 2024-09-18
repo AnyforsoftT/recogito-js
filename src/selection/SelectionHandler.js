@@ -41,12 +41,13 @@ const clearBrowserSelection = (document, emitFn) => {
 
 export default class SelectionHandler extends EventEmitter {
 
-  constructor(element, highlighter, readOnly) {
+  constructor(element, highlighter, readOnly, extraEl = null) {
     super();
 
     this.el = element;
     this.highlighter = highlighter;
     this.readOnly = readOnly;
+    this.extraEl = extraEl;
 
     this.isEnabled = true;
 
@@ -133,8 +134,10 @@ export default class SelectionHandler extends EventEmitter {
 
   _onDocumentMouseDown = (evt) => {
     if (this.isEnabled) {
-      // Check if the click target is outside the content element
-      if (!this.el.contains(evt.target)) {
+      const clickedInsideContent = this.el.contains(evt.target);
+      const clickedInsideExtra = this.extraEl && this.extraEl.contains(evt.target);
+
+      if (!clickedInsideContent && !clickedInsideExtra) {
         this.clearSelection();
       }
     }}

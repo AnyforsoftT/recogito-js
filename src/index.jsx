@@ -40,6 +40,8 @@ export class Recogito {
     //
     let contentEl = (config.content.nodeType) ?
       config.content : document.getElementById(config.content);
+    let extraEl = (config.extraElement.nodeType) ?
+      config.extraElement : document.getElementById(config.extraElement);
 
     // Deep-clone the original node, so we can easily destroy the Recogito instance
     this._originalContent = contentEl.cloneNode(true);
@@ -72,6 +74,7 @@ export class Recogito {
         ref={this._app}
         env={this._environment}
         contentEl={contentEl}
+        extraEl={extraEl}
         wrapperEl={this._wrapperEl}
         config={config}
         onAnnotationSelected={this.handleAnnotationSelected}

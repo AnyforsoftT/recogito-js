@@ -30,6 +30,7 @@ export default class TextAnnotator extends Component {
       editorDisabled: this.props.config.disableEditor,
     }
 
+    this.extraEl = props.extraEl;
     this._editor = React.createRef();
   }
 
@@ -51,7 +52,7 @@ export default class TextAnnotator extends Component {
   componentDidMount() {
     this.highlighter = new Highlighter(this.props.contentEl, this.props.config.formatter);
 
-    this.selectionHandler = new SelectionHandler(this.props.contentEl, this.highlighter, this.props.config.readOnly);
+    this.selectionHandler = new SelectionHandler(this.props.contentEl, this.highlighter, this.props.config.readOnly, this.extraEl);
     this.selectionHandler.on('select', this.handleSelect);
 
     this.relationsLayer = new RelationsLayer(this.props.contentEl);
