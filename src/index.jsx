@@ -38,10 +38,9 @@ export class Recogito {
     //   <appContainerEl />
     // </wrapperEl>
     //
+    let extraEl = config.extraElement
     let contentEl = (config.content.nodeType) ?
-      config.content : document.getElementById(config.content);
-    let extraEl = (config.extraElement.nodeType) ?
-      config.extraElement : document.getElementById(config.extraElement);
+        config.content : document.getElementById(config.content);
 
     // Deep-clone the original node, so we can easily destroy the Recogito instance
     this._originalContent = contentEl.cloneNode(true);
@@ -81,8 +80,7 @@ export class Recogito {
         onAnnotationCreated={this.handleAnnotationCreated}
         onAnnotationUpdated={this.handleAnnotationUpdated}
         onAnnotationDeleted={this.handleAnnotationDeleted}
-        onCancelSelected={this.handleCancelSelected}
-        relationVocabulary={config.relationVocabulary} />, this._appContainerEl);
+        onCancelSelected={this.handleCancelSelected} />, this._appContainerEl)
   }
 
   handleAnnotationSelected = (annotation, element) =>
@@ -179,13 +177,6 @@ export class Recogito {
 
   setAuthInfo = authinfo =>
     this._environment.user = authinfo;
-
-  /**
-   * Activates annotation or relationship drawing mode.
-   * @param mode a string, either ANNOTATION (default) or RELATIONS
-   */
-  setMode = mode =>
-    this._app.current.setMode(mode);
 
   setServerTime = timestamp =>
     this._environment.setServerTime(timestamp);
