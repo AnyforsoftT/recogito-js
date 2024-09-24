@@ -98,8 +98,10 @@ export default class TextAnnotator extends Component {
         selectedDOMElement: element
       }));
 
+      const selectionClone = selection.clone()
+      this.props.onSelect(selectionClone);
       if (!selection.isSelection)
-        this.props.onAnnotationSelected(selection.clone(), element);
+        this.props.onAnnotationSelected(selectionClone, element);
     } else {
       this.clearState();
     }
@@ -269,8 +271,12 @@ export default class TextAnnotator extends Component {
   /* External API */
   /****************/
 
-  addAnnotation = annotation => {
-    this.highlighter.addOrUpdateAnnotation(annotation.clone());
+  addAnnotation = (annotation, prevAnnotation) => {
+    if (prevAnnotation) {
+      this.onCreateOrUpdateAnnotation('onAnnotationUpdated')(annotation.clone(), prevAnnotation);
+    } else  {
+      this.onCreateOrUpdateAnnotation('onAnnotationCreated')(annotation.clone());
+    }
   }
 
   get disableSelect() {

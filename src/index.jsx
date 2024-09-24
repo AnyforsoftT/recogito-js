@@ -76,12 +76,17 @@ export class Recogito {
         extraEl={extraEl}
         wrapperEl={this._wrapperEl}
         config={config}
+        onSelect={this.handleSelect}
         onAnnotationSelected={this.handleAnnotationSelected}
         onAnnotationCreated={this.handleAnnotationCreated}
         onAnnotationUpdated={this.handleAnnotationUpdated}
         onAnnotationDeleted={this.handleAnnotationDeleted}
         onCancelSelected={this.handleCancelSelected} />, this._appContainerEl)
   }
+
+  handleSelect = (annotation) => {
+    this._emitter.emit('select', annotation.underlying);
+  };
 
   handleAnnotationSelected = (annotation, element) =>
     this._emitter.emit('selectAnnotation', annotation.underlying, element);
@@ -117,8 +122,8 @@ export class Recogito {
 
   destroy = () => {
     ReactDOM.unmountComponentAtNode(this._appContainerEl);
-    this._wrapperEl.parentNode.insertBefore(this._originalContent, this._wrapperEl);
-    this._wrapperEl.parentNode.removeChild(this._wrapperEl);
+    this._wrapperEl.parentNode?.insertBefore(this._originalContent, this._wrapperEl);
+    this._wrapperEl.parentNode?.removeChild(this._wrapperEl);
   }
 
   get disableEditor() {
