@@ -270,11 +270,7 @@ export default class Highlighter {
         range.surroundContents(wrapper);
         return wrapper;
       } catch (error) {
-        // If surroundContents fails, fall back to an alternative method
-        const fragment = range.extractContents();
-        wrapper.appendChild(fragment);
-        range.insertNode(wrapper);
-        return wrapper
+        return null
       }
     };
 
@@ -305,7 +301,7 @@ export default class Highlighter {
         return wrapper;
       });
 
-      return [ startWrapper ].concat(centerWrappers,  [ endWrapper ]);
+      return [ startWrapper ].concat(centerWrappers,  [ endWrapper ]).filter(Boolean);
     }
   }
 
