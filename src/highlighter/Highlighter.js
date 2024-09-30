@@ -274,6 +274,10 @@ export default class Highlighter {
       }
     };
 
+    if (range.startContainer.length === range.startOffset) {
+      return []
+    }
+
     if (range.startContainer === range.endContainer) {
       return [ surround(range) ];
     } else {
@@ -294,12 +298,13 @@ export default class Highlighter {
       var endWrapper = surround(endRange);
 
       // And wrap nodes in between, if any
-      var centerWrappers = nodesBetween.reverse().map(function(node) {
+      const isValidRange = startWrapper && endWrapper;
+      var centerWrappers = isValidRange ? nodesBetween.reverse().map(function(node) {
         const wrapper = document.createElement('SPAN');
         node.parentNode.insertBefore(wrapper, node);
         wrapper.appendChild(node);
         return wrapper;
-      });
+      }) : []
 
       return [ startWrapper ].concat(centerWrappers,  [ endWrapper ]).filter(Boolean);
     }
