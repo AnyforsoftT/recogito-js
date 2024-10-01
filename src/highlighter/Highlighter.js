@@ -47,8 +47,9 @@ export default class Highlighter {
       range.setEnd(domEnd.node, domEnd.offset);
 
       const spans = this.wrapRange(range);
-      this.applyStyles(annotation, spans);
+
       this.bindAnnotation(annotation, spans);
+      this.applyStyles(annotation, spans);
     } catch (error) {
       console.warn('Could not render annotation')
       console.warn(error);
@@ -182,6 +183,29 @@ export default class Highlighter {
       return Array.from(colors); // Convert the Set back to an array
     };
 
+    // Function to handle mouse over on the highest parent annotation
+    const handleMouseOver = (span) => {
+      const id = span.getAttribute('data-id');
+      const isHighestParent = !span.closest('.r6o-annotation:not([data-id="' + id + '"])');
+      if (isHighestParent) {
+        const matchingSpans = this.el.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
+        matchingSpans.forEach(matchingSpan => {
+          matchingSpan.classList.add('hover-annotation');
+        });
+      }
+    };
+
+    const handleMouseOut = (span) => {
+      const id = span.getAttribute('data-id');
+      const isHighestParent = !span.closest('.r6o-annotation:not([data-id="' + id + '"])');
+      if (isHighestParent) {
+        const matchingSpans = this.el.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
+        matchingSpans.forEach(matchingSpan => {
+          matchingSpan.classList.remove('hover-annotation');
+        });
+      }
+    };
+
     spans.forEach(span => {
       // Get the background colors of the current span and all its parents
       const parentColors = getParentColors(span);
@@ -195,6 +219,11 @@ export default class Highlighter {
         // Apply multiple linear gradients, one for each parent color
         span.style.backgroundImage = gradientColors;
       }
+
+      // Add event listeners for hover effect
+      span.addEventListener('mouseover', () => handleMouseOver(span));
+      span.addEventListener('mouseout', () => handleMouseOut(span));
+
       // Add the class name for this annotation
       span.className = `r6o-annotation ${extraClasses}`.trim();
     });
