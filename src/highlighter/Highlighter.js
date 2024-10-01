@@ -166,9 +166,39 @@ export default class Highlighter {
         }
       }
     }
-    // apply extra classes if there are any; ensure .r6o-annotation added regardless
-    spans.forEach(span => span.className = `r6o-annotation ${extraClasses}`.trim());
-  }
+
+    // Helper function to collect background colors from the current element and all its parents
+    const getParentColors = (element) => {
+      let colors = new Set();  // Using a Set to ensure unique colors
+      let currentElement = element.parentElement;
+
+      // Traverse upwards and collect background colors from all parents
+      while (currentElement && currentElement.classList.contains('r6o-annotation')) {
+        const bgColor = window.getComputedStyle(currentElement).backgroundColor;
+        colors.add(bgColor);  // Add the color to the Set (automatically handles duplicates)
+        currentElement = currentElement.parentElement;
+      }
+
+      return Array.from(colors); // Convert the Set back to an array
+    };
+
+    spans.forEach(span => {
+      // Get the background colors of the current span and all its parents
+      const parentColors = getParentColors(span);
+
+      if (parentColors.length > 0) {
+        // Map each color into a separate linear-gradient and join them with a comma
+        const gradientColors = parentColors
+            .map(color => `linear-gradient(45deg, ${color}, ${color})`)
+            .join(', ');
+
+        // Apply multiple linear gradients, one for each parent color
+        span.style.backgroundImage = gradientColors;
+      }
+      // Add the class name for this annotation
+      span.className = `r6o-annotation ${extraClasses}`.trim();
+    });
+  };
 
   bindAnnotation = (annotation, elements) => {
     elements.forEach(el => {
