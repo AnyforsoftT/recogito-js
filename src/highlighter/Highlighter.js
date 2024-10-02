@@ -7,6 +7,7 @@ export default class Highlighter {
   constructor(element, formatter) {
     this.el = element;
     this.formatter = formatter;
+    this.highlightedAnnotationId = '';
   }
 
   init = annotations => new Promise((resolve, _) => {
@@ -134,6 +135,21 @@ export default class Highlighter {
     }
   }
 
+  highlightAnnotation = (id) => {
+    const matchingSpans = this.el.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
+    matchingSpans.forEach((span) => {
+      span.classList.add('hover-annotation');
+    });
+  };
+
+  unhighlightAnnotation = (id) => {
+    const matchingSpans = this.el.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
+    matchingSpans.forEach((span) => {
+      span.classList.remove('hover-annotation');
+    });
+  };
+
+
   /**
    * Apply styles using this highlighter's formatter, which is a user-defined
    * function that takes an annotation as input, and returns either a string,
@@ -187,22 +203,22 @@ export default class Highlighter {
     const handleMouseOver = (span) => {
       const id = span.getAttribute('data-id');
       const isHighestParent = !span.closest('.r6o-annotation:not([data-id="' + id + '"])');
+      if (this.highlightedAnnotationId) {
+        const highlightedChild = span.querySelector('.r6o-annotation[data-id="' + this.highlightedAnnotationId + '"]');
+        if (highlightedChild) {
+          return;
+        }
+      }
       if (isHighestParent) {
-        const matchingSpans = this.el.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
-        matchingSpans.forEach(matchingSpan => {
-          matchingSpan.classList.add('hover-annotation');
-        });
+        this.highlightAnnotation(id);
       }
     };
 
     const handleMouseOut = (span) => {
       const id = span.getAttribute('data-id');
       const isHighestParent = !span.closest('.r6o-annotation:not([data-id="' + id + '"])');
-      if (isHighestParent) {
-        const matchingSpans = this.el.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
-        matchingSpans.forEach(matchingSpan => {
-          matchingSpan.classList.remove('hover-annotation');
-        });
+      if (isHighestParent && id !== this.highlightedAnnotationId) {
+        this.unhighlightAnnotation(id);
       }
     };
 

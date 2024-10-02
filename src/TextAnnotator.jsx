@@ -217,6 +217,18 @@ export default class TextAnnotator extends Component {
     this.props.onAnnotationDeleted(annotation);
   }
 
+  highlightAnnotation = (id) => {
+    this.highlighter.highlightAnnotation(id);
+  };
+
+  unhighlightAnnotation = (id) => {
+    this.highlighter.unhighlightAnnotation(id);
+  };
+
+  setHighlightedAnnotation = (id) => {
+    this.highlighter.highlightedAnnotationId = id;
+  };
+
   /** Cancel button on annotation editor **/
   onCancelAnnotation = annotation => {
     this.clearState();

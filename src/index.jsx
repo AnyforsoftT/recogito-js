@@ -114,8 +114,24 @@ export class Recogito {
   addAnnotation = annotation =>
     this._app.current.addAnnotation(new WebAnnotation(annotation));
 
+  deleteAnnotation = (annotationOrId) => {
+    const annotation = this._wrap(annotationOrId);
+    this._app.current.removeAnnotation(annotation);
+    this._emitter.emit('deleteAnnotation', annotation.underlying);
+  };
+
   clearAnnotations = () =>
     this.setAnnotations(null);
+
+  highlightAnnotation = (id) => {
+    this._app.current.setHighlightedAnnotation(id);
+    this._app.current.highlightAnnotation(id);
+  };
+
+  unhighlightAnnotation = (id) => {
+    this._app.current.unhighlightAnnotation(id);
+    this._app.current.setHighlightedAnnotation('');
+  };
 
   clearAuthInfo = () =>
     this._environment.user = null;
