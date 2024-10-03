@@ -111,8 +111,13 @@ export class Recogito {
   _wrap = annotationOrId =>
     annotationOrId?.type === 'Annotation' ? new WebAnnotation(annotationOrId) : annotationOrId;
 
-  addAnnotation = annotation =>
-    this._app.current.addAnnotation(new WebAnnotation(annotation));
+  addAnnotation = (annotation, prevAnnotation) => {
+    if (prevAnnotation) {
+      this._app.current.addAnnotation(new WebAnnotation(annotation), new WebAnnotation(prevAnnotation));
+    } else {
+      this._app.current.addAnnotation(new WebAnnotation(annotation));
+    }
+  };
 
   deleteAnnotation = (annotationOrId) => {
     const annotation = this._wrap(annotationOrId);
