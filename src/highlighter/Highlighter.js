@@ -51,6 +51,10 @@ export default class Highlighter {
 
       this.bindAnnotation(annotation, spans);
       this.applyStyles(annotation, spans);
+
+      if (annotation.id === this.highlightedAnnotationId) {
+        this.highlightAnnotation(annotation.id)
+      }
     } catch (error) {
       console.warn('Could not render annotation')
       console.warn(error);
@@ -137,6 +141,7 @@ export default class Highlighter {
 
   highlightAnnotation = (id) => {
     const matchingSpans = this.el.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
+    console.log(matchingSpans);
     matchingSpans.forEach((span) => {
       span.classList.add('hover-annotation');
     });
