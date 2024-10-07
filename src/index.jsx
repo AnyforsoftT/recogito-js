@@ -187,9 +187,6 @@ export class Recogito {
     this._app.current.readOnly = readOnly;
   }
 
-  removeAnnotation = annotation =>
-    this._app.current.removeAnnotation(new WebAnnotation(annotation));
-
   selectAnnotation = annotationOrId => {
     const selected = this._app.current.selectAnnotation(this._wrap(annotationOrId));
     return selected?.underlying;
