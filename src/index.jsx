@@ -119,10 +119,8 @@ export class Recogito {
     this._app.current.addAnnotation(new WebAnnotation(annotation), new WebAnnotation(prevAnnotation));
   };
 
-  deleteAnnotation = (annotationOrId) => {
-    const annotation = this._wrap(annotationOrId);
-    this._app.current.removeAnnotation(annotation);
-    this._emitter.emit('deleteAnnotation', annotation.underlying);
+  deleteAnnotation = (annotation) => {
+    this._app.current.removeAnnotation(new WebAnnotation(annotation));
   };
 
   clearAnnotations = () =>
