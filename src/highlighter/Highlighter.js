@@ -136,14 +136,14 @@ export default class Highlighter {
   }
 
   highlightAnnotation = (id) => {
-    const matchingSpans = this.el.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
+    const matchingSpans = document.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
     matchingSpans.forEach((span) => {
       span.classList.add('hover-annotation');
     });
   };
 
   unhighlightAnnotation = (id) => {
-    const matchingSpans = this.el.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
+    const matchingSpans = document.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
     matchingSpans.forEach((span) => {
       span.classList.remove('hover-annotation');
     });
