@@ -193,17 +193,17 @@ export default class TextAnnotator extends Component {
   }
 
   /** Common handler for annotation CREATE or UPDATE **/
-  onCreateOrUpdateAnnotation = method => (annotation, previous) => {
+  onCreateOrUpdateAnnotation = (method, silent = false) => (annotation, previous) => {
     this.clearState();
-
     this.selectionHandler.clearSelection();
     this.highlighter.addOrUpdateAnnotation(annotation, previous);
 
-    // Call CREATE or UPDATE handler
-    if (previous)
-      this.props[method](annotation.clone(), previous.clone());
-    else
-      this.props[method](annotation.clone(), this.overrideAnnotationId(annotation));
+    if (!silent) {
+      if (previous)
+        this.props[method](annotation.clone(), previous.clone());
+      else
+        this.props[method](annotation.clone(), this.overrideAnnotationId(annotation));
+    }
   }
 
   onDeleteAnnotation = annotation => {
@@ -283,11 +283,11 @@ export default class TextAnnotator extends Component {
   /* External API */
   /****************/
 
-  addAnnotation = (annotation, prevAnnotation) => {
+  addAnnotation = (annotation, prevAnnotation, silent = false) => {
     if (prevAnnotation) {
-      this.onCreateOrUpdateAnnotation('onAnnotationUpdated')(annotation.clone(), prevAnnotation);
-    } else  {
-      this.onCreateOrUpdateAnnotation('onAnnotationCreated')(annotation.clone());
+      this.onCreateOrUpdateAnnotation('onAnnotationUpdated', silent)(annotation.clone(), prevAnnotation);
+    } else {
+      this.onCreateOrUpdateAnnotation('onAnnotationCreated', silent)(annotation.clone());
     }
   }
 
