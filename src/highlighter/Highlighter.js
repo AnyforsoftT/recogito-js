@@ -10,38 +10,47 @@ export default class Highlighter {
     this.highlightedAnnotationId = '';
   }
 
-  init = annotations => new Promise((resolve, _) => {
-    const startTime = performance.now();
+  init = (annotations) =>
+    new Promise((resolve, _) => {
+      const startTime = performance.now();
 
-    // Discard all annotations without a TextPositionSelector
-    const highlights = annotations.filter(a => a.selector('TextPositionSelector'));
+      // Discard annotations without a TextPositionSelector or of type 'shadow'
+      const highlights = annotations.filter(
+          (a) => a.selector('TextPositionSelector') && a.type !== 'shadow'
+      );
 
-    // Sorting bottom to top significantly speeds things up,
-    // because walkTextNodes will have a lot less to walk
-    highlights.sort((a, b) => b.start - a.start);
+      // Sorting bottom to top significantly speeds things up,
+      // because walkTextNodes will have a lot less to walk
+      highlights.sort((a, b) => b.start - a.start);
 
-    // Render loop
-    const render = annotations => {
-      const batch = annotations.slice(0, RENDER_BATCH_SIZE);
-      const remainder = annotations.slice(RENDER_BATCH_SIZE);
+      // Render loop
+      const render = (annotations) => {
+        const batch = annotations.slice(0, RENDER_BATCH_SIZE);
+        const remainder = annotations.slice(RENDER_BATCH_SIZE);
 
-      requestAnimationFrame(() => {
-        batch.forEach(this._addAnnotation);
-        if (remainder.length > 0) {
-          render(remainder);
-        } else {
-          console.log(`Rendered ${highlights.length}, took ${performance.now() - startTime}ms`);
-          resolve();
-        }
-      });
+        requestAnimationFrame(() => {
+          batch.forEach(this._addAnnotation);
+          if (remainder.length > 0) {
+            render(remainder);
+          } else {
+            console.log(`Rendered ${highlights.length}, took ${performance.now() - startTime}ms`);
+            resolve();
+          }
+        });
+      };
+      render(highlights);
+    });
+
+  _addAnnotation = (annotation) => {
+    // Skip rendering if the annotation is of type 'shadow'
+    if (annotation.type === 'shadow') {
+      // Remove existing highlights for this annotation, if any
+      this.removeAnnotation(annotation);
+      return;
     }
 
-    render(highlights);
-  })
-
-  _addAnnotation = annotation => {
     try {
-      const [ domStart, domEnd ] = this.charOffsetsToDOMPosition([ annotation.start, annotation.end ]);
+      const [domStart, domEnd] = this.charOffsetsToDOMPosition([annotation.start, annotation.end]);
 
       const range = document.createRange();
       range.setStart(domStart.node, domStart.offset);
@@ -52,11 +61,11 @@ export default class Highlighter {
       this.bindAnnotation(annotation, spans);
       this.applyStyles(annotation, spans);
     } catch (error) {
-      console.warn('Could not render annotation')
+      console.warn('Could not render annotation');
       console.warn(error);
       console.warn(annotation.underlying);
     }
-  }
+  };
 
   findAnnotationSpans = annotationOrId => {
     const id = annotationOrId.id || annotationOrId;
@@ -71,20 +80,21 @@ export default class Highlighter {
   }
 
   addOrUpdateAnnotation = (annotation, maybePrevious) => {
-    // TODO index annotation to make this faster
     const annoSpans = this.findAnnotationSpans(annotation);
     const prevSpans = maybePrevious ? this.findAnnotationSpans(maybePrevious) : [];
     const spans = uniqueItems(annoSpans.concat(prevSpans));
 
+    // Remove existing highlights
     if (spans.length > 0) {
-      // naive approach
       this._unwrapHighlightings(spans);
       this.el.normalize();
-      this._addAnnotation(annotation);
-    } else {
+    }
+
+    // Only add annotation if it's not of type 'shadow'
+    if (annotation.type !== 'shadow') {
       this._addAnnotation(annotation);
     }
-  }
+  };
 
   removeAnnotation = annotation => {
     const spans = this.findAnnotationSpans(annotation);
