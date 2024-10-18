@@ -92,12 +92,13 @@ export const getExactOverlaps = (selection, selectedSpans) => {
     return [];
 };
 
-export const enableTouch = (element, selectHandler) => {
+export const enableTouch = (element, selectHandler, onStartCallback, onEndCallback) => {
   let touchTimeout;
   let lastTouchEvent;
 
   const onTouchStart = evt => {
     if (!touchTimeout) {
+      onStartCallback()
       lastTouchEvent = evt;
       touchTimeout = setTimeout(executeTouchSelect, 1000);
     }
@@ -108,6 +109,7 @@ export const enableTouch = (element, selectHandler) => {
       selectHandler(lastTouchEvent);
       touchTimeout = null;
       lastTouchEvent = null;
+      onEndCallback()
     }
   };
 
