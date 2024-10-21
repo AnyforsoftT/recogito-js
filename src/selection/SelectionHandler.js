@@ -24,17 +24,37 @@ const contains = (containerEl, maybeChildEl) => {
 // Function to clear selection for all browsers
 const clearBrowserSelection = (document, emitFn) => {
   const selection = document.getSelection();
-
   if (selection) {
-    if (selection.empty) {  // Chrome and similar browsers
-      selection.empty();
-      emitFn();  // Emit deselect event
-    } else if (selection.removeAllRanges) {  // Firefox, Safari, etc.
+    try {
+      // Remove all ranges (works on most browsers)
       selection.removeAllRanges();
-      emitFn();  // Emit deselect event
-    } else if (document.selection) {  // Internet Explorer
-      document.selection.empty();
-      emitFn();  // Emit deselect event
+      // For iOS Safari, if selection still exists
+      if (selection.rangeCount > 0 || !selection.isCollapsed) {
+        // Create a temporary input element to remove selection for iPads all browsers
+        const tempInput = document.createElement('input');
+        tempInput.style.position = 'absolute';
+        tempInput.style.opacity = '0';
+        tempInput.style.pointerEvents = 'none';
+        tempInput.style.height = '0';
+        tempInput.style.fontSize = '16px'; // Prevent zooming on focus in Safari
+        document.body.appendChild(tempInput);
+        // Shift focus to the input element to clear selection
+        tempInput.focus();
+        // Clean up
+        setTimeout(() => {
+          document.body.removeChild(tempInput);
+          if (typeof emitFn === 'function') {
+            emitFn(); // Emit deselect event
+          }
+        }, 0);
+      } else {
+        // Emit deselect event if selection was cleared
+        if (typeof emitFn === 'function') {
+          emitFn();
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to clear selection:', error);
     }
   }
 };
