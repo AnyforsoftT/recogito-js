@@ -60,7 +60,7 @@ export default class SelectionHandler extends EventEmitter {
     this.document.addEventListener('mousedown', this._onDocumentMouseDown);
 
     if (IS_TOUCH)
-      enableTouch(element, this._onMouseUp, this.removeSelectionSpans,  () => clearBrowserSelection(this.document, () => {}));
+      enableTouch(element, this._onMouseUp, () => this.removeSelectionSpans(this.document),  () => clearBrowserSelection(this.document, () => {}));
   }
 
   get enabled() {
@@ -145,26 +145,24 @@ export default class SelectionHandler extends EventEmitter {
     this.el.classList.add('r6o-hide-selection');
   }
 
-  removeSelectionSpans = () => {
-    this.el.classList.remove('r6o-hide-selection');
-    console.log('remove selection spans')
-    const spans = Array.prototype.slice.call(this.el.querySelectorAll('.r6o-selection'));
-    if (spans) {
-      spans.forEach(span => {
-        const parent = span.parentNode;
-        parent.insertBefore(this.document.createTextNode(span.textContent), span);
-        parent.removeChild(span);
-      });
-    }
-
-    this.el.normalize();
+  removeSelectionSpans = (element) =>  {
+      element.classList?.remove('r6o-hide-selection');
+      const spans = Array.prototype.slice.call(element.querySelectorAll('.r6o-selection')) || []
+      if (spans) {
+        spans.forEach(span => {
+          const parent = span.parentNode;
+          parent.insertBefore(this.document.createTextNode(span.textContent), span);
+          parent.removeChild(span);
+        });
+      }
+      this.el.normalize();
   }
 
   clearSelection = () => {
     if (this.isEnabled) {
       this._currentSelection = null;
       clearBrowserSelection(this.document, () => this.emit('select', {}));
-      this.removeSelectionSpans()
+      this.removeSelectionSpans(this.el)
     }
   }
 

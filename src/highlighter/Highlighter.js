@@ -67,10 +67,14 @@ export default class Highlighter {
     }
   };
 
-  findAnnotationSpans = annotationOrId => {
-    const id = annotationOrId.id || annotationOrId;
-    const spans =Array.from(document.querySelectorAll(`.r6o-annotation[data-id="${id}"]`));
-    return spans;
+  findAnnotationSpans = (annotationOrId) => {
+    const id = annotationOrId?.id || annotationOrId;
+    const elements = document.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
+    if (!elements || elements?.length === 0) {
+      console.warn(`No elements found for annotation with id: ${id}`);
+      return [];
+    }
+    return Array.from(elements);
   }
 
   getAllAnnotations = () => {
