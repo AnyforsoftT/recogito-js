@@ -36,6 +36,10 @@ const clearBrowserSelection = (document, emitFn) => {
       document.selection.empty();
       emitFn();  // Emit deselect event
     }
+
+    if (document.activeElement) {
+      document.activeElement.blur();
+    }
   }
 };
 
