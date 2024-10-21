@@ -109,7 +109,10 @@ export const enableTouch = (element, selectHandler, onStartCallback, onEndCallba
       selectHandler(lastTouchEvent);
       touchTimeout = null;
       lastTouchEvent = null;
-      onEndCallback()
+      const selection = element.ownerDocument.getSelection();
+      if (selection && !selection.isCollapsed) {
+        onEndCallback(selection);
+      }
     }
   };
 

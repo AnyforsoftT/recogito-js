@@ -59,8 +59,23 @@ export default class SelectionHandler extends EventEmitter {
     // Add event listener for clicks outside the content element
     this.document.addEventListener('mousedown', this._onDocumentMouseDown);
 
-    if (IS_TOUCH)
-      enableTouch(element, this._onMouseUp, () => this.removeSelectionSpans(this.document),  () => clearBrowserSelection(this.document, () => {}));
+    if (IS_TOUCH) {
+      enableTouch(
+        element,
+        this._onMouseUp,
+        () => this.removeSelectionSpans(this.document),
+        (selection) => {  // End callback receives the real selection
+          const selectedRange = selection.getRangeAt(0); // Get the real selected range
+          // Convert the range to the appropriate format for emitting
+          const stub = rangeToSelection(selectedRange, this.el);
+          this.emit('select', {
+            selection: stub, // Pass the real selection here
+            element: selectedRange // Optionally pass more info about the element or range
+          });
+          clearBrowserSelection(this.document, () => {}); // Clear the selection afterward
+        }
+      );
+    }
   }
 
   get enabled() {
