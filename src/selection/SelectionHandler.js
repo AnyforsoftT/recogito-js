@@ -26,21 +26,15 @@ const clearBrowserSelection = (document, emitFn) => {
   const selection = document.getSelection();
 
   if (selection) {
-    try {
-      const range = document.createRange();
-      range.setStart(document.body, 0);
-      range.collapse(true);
-
+    if (selection.empty) {  // Chrome and similar browsers
+      selection.empty();
+      emitFn();  // Emit deselect event
+    } else if (selection.removeAllRanges) {  // Firefox, Safari, etc.
       selection.removeAllRanges();
-      selection.addRange(range);
-      selection.removeAllRanges(); // Clear the added range
-
-      // Emit deselect event
-      if (typeof emitFn === 'function') {
-        emitFn();
-      }
-    } catch (error) {
-      console.warn('Failed to clear selection:', error);
+      emitFn();  // Emit deselect event
+    } else if (document.selection) {  // Internet Explorer
+      document.selection.empty();
+      emitFn();  // Emit deselect event
     }
   }
 };
