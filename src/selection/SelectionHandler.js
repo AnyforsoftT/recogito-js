@@ -163,12 +163,13 @@ export default class SelectionHandler extends EventEmitter {
     }}
 
   _hideNativeSelection = () => {
-    this.el.classList.add('r6o-hide-selection');
+    this.el?.classList.add('r6o-hide-selection');
   }
 
   removeSelectionSpans = (element) =>  {
-      element.classList?.remove('r6o-hide-selection');
-      const spans = Array.prototype.slice.call(element.querySelectorAll('.r6o-selection')) || []
+    const currentElement = element || this.document
+    currentElement?.classList?.remove('r6o-hide-selection');
+      const spans = Array.prototype.slice.call(currentElement.querySelectorAll('.r6o-selection')) || []
       if (spans) {
         spans.forEach(span => {
           const parent = span.parentNode;
@@ -183,7 +184,7 @@ export default class SelectionHandler extends EventEmitter {
     if (this.isEnabled) {
       this._currentSelection = null;
       clearBrowserSelection(this.document, () => this.emit('select', {}));
-      this.removeSelectionSpans(this.el)
+      this.removeSelectionSpans(this.el);
     }
   }
 

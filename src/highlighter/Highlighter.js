@@ -152,14 +152,14 @@ export default class Highlighter {
   highlightAnnotation = (id) => {
     const matchingSpans = document.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
     matchingSpans.forEach((span) => {
-      span.classList.add('hover-annotation');
+      span?.classList.add('hover-annotation');
     });
   };
 
   unhighlightAnnotation = (id) => {
     const matchingSpans = document.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
     matchingSpans.forEach((span) => {
-      span.classList.remove('hover-annotation');
+      span?.classList.remove('hover-annotation');
     });
   };
 
@@ -204,7 +204,7 @@ export default class Highlighter {
       let currentElement = element.parentElement;
 
       // Traverse upwards and collect background colors from all parents
-      while (currentElement && currentElement.classList.contains('r6o-annotation')) {
+      while (currentElement && currentElement?.classList.contains('r6o-annotation')) {
         const bgColor = window.getComputedStyle(currentElement).backgroundColor;
         colors.add(bgColor);  // Add the color to the Set (automatically handles duplicates)
         currentElement = currentElement.parentElement;
@@ -407,7 +407,7 @@ export default class Highlighter {
 
           annotations.push(element.annotation);
 
-          return (parent.classList.contains('r6o-annotation')) ?
+          return (parent?.classList.contains('r6o-annotation')) ?
             getAnnotationsRecursive(parent, annotations) : annotations;
         },
 
