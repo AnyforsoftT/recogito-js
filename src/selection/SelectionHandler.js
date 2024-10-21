@@ -26,19 +26,21 @@ const clearBrowserSelection = (document, emitFn) => {
   const selection = document.getSelection();
 
   if (selection) {
-    if (selection.empty) {  // Chrome and similar browsers
-      selection.empty();
-      emitFn();  // Emit deselect event
-    } else if (selection.removeAllRanges) {  // Firefox, Safari, etc.
-      selection.removeAllRanges();
-      emitFn();  // Emit deselect event
-    } else if (document.selection) {  // Internet Explorer
-      document.selection.empty();
-      emitFn();  // Emit deselect event
-    }
+    try {
+      const range = document.createRange();
+      range.setStart(document.body, 0);
+      range.collapse(true);
 
-    if (document.activeElement) {
-      document.activeElement.blur();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      selection.removeAllRanges(); // Clear the added range
+
+      // Emit deselect event
+      if (typeof emitFn === 'function') {
+        emitFn();
+      }
+    } catch (error) {
+      console.warn('Failed to clear selection:', error);
     }
   }
 };
