@@ -22,7 +22,7 @@ const contains = (containerEl, maybeChildEl) => {
 };
 
 // Function to clear selection for all browsers
-const clearBrowserSelection = (document, emitFn) => {
+const clearBrowserSelection = (document, emitFn, isIpad) => {
   const selection = document.getSelection();
 
   if (selection) {
@@ -35,6 +35,19 @@ const clearBrowserSelection = (document, emitFn) => {
     } else if (document.selection) {  // Internet Explorer
       document.selection.empty();
       emitFn();  // Emit deselect event
+    } else if (isIpad) {
+      // Fallback for iPads
+      const activeElement = document.activeElement;
+      if (activeElement && typeof activeElement.blur === 'function') {
+        activeElement.blur();
+      }
+      // Create a collapsed range
+      const range = document.createRange();
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      // Emit deselect event
+      emitFn();
     }
   }
 };
@@ -72,7 +85,7 @@ export default class SelectionHandler extends EventEmitter {
             selection: stub, // Pass the real selection here
             element: selectedRange // Optionally pass more info about the element or range
           });
-          clearBrowserSelection(this.document, () => {}); // Clear the selection afterward
+          clearBrowserSelection(this.document, () => {}, true); // Clear the selection afterward
         }
       );
     }
@@ -177,7 +190,7 @@ export default class SelectionHandler extends EventEmitter {
   clearSelection = () => {
     if (this.isEnabled) {
       this._currentSelection = null;
-      clearBrowserSelection(this.document, () => this.emit('select', {}));
+      clearBrowserSelection(this.document, () => this.emit('select', {}), false);
       this.removeSelectionSpans(this.el);
     }
   }
