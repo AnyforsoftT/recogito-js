@@ -26,12 +26,14 @@ export const trimRange = range => {
     if (correctedEnd < 0) {
       // This correction crosses container tag boundaries
       const prevContainer = range.endContainer.previousSibling || range.endContainer.parentNode;
-      
+
       // Get last text child in previous container
       const prevText = Array.from(prevContainer.childNodes)
         .filter(n => n.nodeType === Node.TEXT_NODE).pop();
 
-      range.setEnd(prevText, prevText.textContent.length + correctedEnd);
+      if (prevText) {
+        range.setEnd(prevText, prevText.textContent?.length + correctedEnd);
+      }
     } else {
       range.setEnd(range.endContainer, correctedEnd);
     }
@@ -50,7 +52,7 @@ export const rangeToSelection = (range, containerEl) => {
   const quote = range.toString();
   const start = rangeBefore.toString().length;
 
-  return new Selection({ 
+  return new Selection({
     selector: [{
       type: 'TextQuoteSelector',
       exact: quote
@@ -90,12 +92,13 @@ export const getExactOverlaps = (selection, selectedSpans) => {
     return [];
 };
 
-export const enableTouch = (element, selectHandler) => {
+export const enableTouch = (element, selectHandler, onStartCallback, onEndCallback) => {
   let touchTimeout;
   let lastTouchEvent;
 
   const onTouchStart = evt => {
     if (!touchTimeout) {
+      onStartCallback()
       lastTouchEvent = evt;
       touchTimeout = setTimeout(executeTouchSelect, 1000);
     }
@@ -106,6 +109,10 @@ export const enableTouch = (element, selectHandler) => {
       selectHandler(lastTouchEvent);
       touchTimeout = null;
       lastTouchEvent = null;
+      const selection = element.ownerDocument.getSelection();
+      if (selection && !selection.isCollapsed) {
+        onEndCallback(selection);
+      }
     }
   };
 
@@ -117,5 +124,5 @@ export const enableTouch = (element, selectHandler) => {
   }
 
   element.addEventListener('touchstart', onTouchStart);
-  document.addEventListener('selectionchange', resetTouch);  
+  document.addEventListener('selectionchange', resetTouch);
 }

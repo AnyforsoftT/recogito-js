@@ -1,4 +1,4 @@
-import { trimRange, rangeToSelection, enableTouch, getExactOverlaps } from './SelectionUtils';
+import { rangeToSelection, enableTouch, getExactOverlaps } from './SelectionUtils';
 import EventEmitter from 'tiny-emitter';
 
 const IS_TOUCH = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -19,16 +19,48 @@ const contains = (containerEl, maybeChildEl) => {
     // Things can be so simple, unless you're in IE
     return containerEl.contains(maybeChildEl);
   }
-}
+};
+
+// Function to clear selection for all browsers
+const clearBrowserSelection = (document, emitFn, isIpad) => {
+  const selection = document.getSelection();
+
+  if (selection) {
+    if (selection.empty) {  // Chrome and similar browsers
+      selection.empty();
+      emitFn();  // Emit deselect event
+    } else if (selection.removeAllRanges) {  // Firefox, Safari, etc.
+      selection.removeAllRanges();
+      emitFn();  // Emit deselect event
+    } else if (document.selection) {  // Internet Explorer
+      document.selection.empty();
+      emitFn();  // Emit deselect event
+    } else if (isIpad) {
+      // Fallback for iPads
+      const activeElement = document.activeElement;
+      if (activeElement && typeof activeElement.blur === 'function') {
+        activeElement.blur();
+      }
+      // Create a collapsed range
+      const range = document.createRange();
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      // Emit deselect event
+      emitFn();
+    }
+  }
+};
 
 export default class SelectionHandler extends EventEmitter {
 
-  constructor(element, highlighter, readOnly) {
+  constructor(element, highlighter, readOnly, extraEl = null) {
     super();
 
     this.el = element;
     this.highlighter = highlighter;
     this.readOnly = readOnly;
+    this.extraEl = extraEl;
 
     this.isEnabled = true;
 
@@ -37,8 +69,26 @@ export default class SelectionHandler extends EventEmitter {
     element.addEventListener('mousedown', this._onMouseDown);
     element.addEventListener('mouseup', this._onMouseUp);
 
-    if (IS_TOUCH)
-      enableTouch(element, this._onMouseUp);
+    // Add event listener for clicks outside the content element
+    this.document.addEventListener('mousedown', this._onDocumentMouseDown);
+
+    if (IS_TOUCH) {
+      enableTouch(
+        element,
+        this._onMouseUp,
+        () => this.removeSelectionSpans(this.document),
+        (selection) => {  // End callback receives the real selection
+          const selectedRange = selection.getRangeAt(0); // Get the real selected range
+          // Convert the range to the appropriate format for emitting
+          const stub = rangeToSelection(selectedRange, this.el);
+          this.emit('select', {
+            selection: stub, // Pass the real selection here
+            element: selectedRange // Optionally pass more info about the element or range
+          });
+          clearBrowserSelection(this.document, () => {}, true); // Clear the selection afterward
+        }
+      );
+    }
   }
 
   get enabled() {
@@ -49,10 +99,17 @@ export default class SelectionHandler extends EventEmitter {
     this.isEnabled = enabled;
   }
 
+  destroy() {
+    this.el.removeEventListener('mousedown', this._onMouseDown);
+    this.el.removeEventListener('mouseup', this._onMouseUp);
+    this.document.removeEventListener('mousedown', this._onDocumentMouseDown);
+  }
+
   _onMouseDown = evt => {
     // left click only
-    if (evt.button === 0)
+    if (evt.button === 0) {
       this.clearSelection();
+    }
   }
 
   _onMouseUp = evt => {
@@ -71,20 +128,17 @@ export default class SelectionHandler extends EventEmitter {
           this.emit('select', {});
         }
       } else if (!this.readOnly) {
-        const selectedRange = trimRange(selection.getRangeAt(0));
+         const selectedRange = selection.getRangeAt(0)
 
-        // Make sure the selection is entirely inside this.el
-        const { commonAncestorContainer } = selectedRange;
-
-        if (contains(this.el, commonAncestorContainer)) {
+        if (contains(this.el, selectedRange?.commonAncestorContainer)) {
           const stub = rangeToSelection(selectedRange, this.el);
 
           const spans = this.highlighter.wrapRange(selectedRange);
           spans.forEach(span => span.className = 'r6o-selection');
-
           this._hideNativeSelection();
 
-          const exactOverlaps = getExactOverlaps(stub, spans);
+          const exactOverlaps = getExactOverlaps(stub, spans)
+
           if (exactOverlaps.length > 0) {
             // User selected existing - reuse top-most original to avoid stratification
             const top = exactOverlaps[0];
@@ -105,28 +159,24 @@ export default class SelectionHandler extends EventEmitter {
     }
   }
 
+  _onDocumentMouseDown = (evt) => {
+    if (this.isEnabled) {
+      const clickedInsideContent = this.el.contains(evt.target);
+      const clickedInsideExtra = this.extraEl && this.extraEl.contains(evt.target);
+
+      if (!clickedInsideContent && !clickedInsideExtra) {
+        this.clearSelection();
+      }
+    }}
+
   _hideNativeSelection = () => {
-    this.el.classList.add('r6o-hide-selection');
+    this.el?.classList.add('r6o-hide-selection');
   }
 
-  clearSelection = () => {
-    if (this.isEnabled) {
-      this._currentSelection = null;
-
-      // Remove native selection, if any
-      if (this.document.getSelection) {
-        if (this.document.getSelection().empty) {  // Chrome
-          this.document.getSelection().empty();
-        } else if (this.document.getSelection().removeAllRanges) {  // Firefox
-          this.document.getSelection().removeAllRanges();
-        }
-      } else if (this.document.selection) {  // IE?
-        this.document.selection.empty();
-      }
-
-      this.el.classList.remove('r6o-hide-selection');
-
-      const spans = Array.prototype.slice.call(this.el.querySelectorAll('.r6o-selection'));
+  removeSelectionSpans = (element) =>  {
+    const currentElement = element || this.document
+    currentElement?.classList?.remove('r6o-hide-selection');
+      const spans = Array.prototype.slice.call(currentElement.querySelectorAll('.r6o-selection')) || []
       if (spans) {
         spans.forEach(span => {
           const parent = span.parentNode;
@@ -135,6 +185,13 @@ export default class SelectionHandler extends EventEmitter {
         });
       }
       this.el.normalize();
+  }
+
+  clearSelection = () => {
+    if (this.isEnabled) {
+      this._currentSelection = null;
+      clearBrowserSelection(this.document, () => this.emit('select', {}), false);
+      this.removeSelectionSpans(this.el);
     }
   }
 

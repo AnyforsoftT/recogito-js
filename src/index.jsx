@@ -38,8 +38,9 @@ export class Recogito {
     //   <appContainerEl />
     // </wrapperEl>
     //
+    let extraEl = config.extraElement
     let contentEl = (config.content.nodeType) ?
-      config.content : document.getElementById(config.content);
+        config.content : document.getElementById(config.content);
 
     // Deep-clone the original node, so we can easily destroy the Recogito instance
     this._originalContent = contentEl.cloneNode(true);
@@ -72,15 +73,20 @@ export class Recogito {
         ref={this._app}
         env={this._environment}
         contentEl={contentEl}
+        extraEl={extraEl}
         wrapperEl={this._wrapperEl}
         config={config}
+        onSelect={this.handleSelect}
         onAnnotationSelected={this.handleAnnotationSelected}
         onAnnotationCreated={this.handleAnnotationCreated}
         onAnnotationUpdated={this.handleAnnotationUpdated}
         onAnnotationDeleted={this.handleAnnotationDeleted}
-        onCancelSelected={this.handleCancelSelected}
-        relationVocabulary={config.relationVocabulary} />, this._appContainerEl);
+        onCancelSelected={this.handleCancelSelected} />, this._appContainerEl)
   }
+
+  handleSelect = (annotation) => {
+    this._emitter.emit('select', annotation.underlying);
+  };
 
   handleAnnotationSelected = (annotation, element) =>
     this._emitter.emit('selectAnnotation', annotation.underlying, element);
@@ -105,19 +111,39 @@ export class Recogito {
   _wrap = annotationOrId =>
     annotationOrId?.type === 'Annotation' ? new WebAnnotation(annotationOrId) : annotationOrId;
 
-  addAnnotation = annotation =>
+  addAnnotation = (annotation) => {
     this._app.current.addAnnotation(new WebAnnotation(annotation));
+  };
+
+  updateAnnotation = (annotation, prevAnnotation, silent = false) => {
+    this._app.current.addAnnotation(new WebAnnotation(annotation), new WebAnnotation(prevAnnotation), silent);
+  };
+
+  deleteAnnotation = (annotation) => {
+    this._app.current.removeAnnotation(new WebAnnotation(annotation));
+    this._emitter.emit('deleteAnnotation', annotation);
+  };
 
   clearAnnotations = () =>
     this.setAnnotations(null);
+
+  highlightAnnotation = (id) => {
+    this._app.current.setHighlightedAnnotation(id);
+    this._app.current.highlightAnnotation(id);
+  };
+
+  unhighlightAnnotation = (id) => {
+    this._app.current.unhighlightAnnotation(id);
+    this._app.current.setHighlightedAnnotation('');
+  };
 
   clearAuthInfo = () =>
     this._environment.user = null;
 
   destroy = () => {
     ReactDOM.unmountComponentAtNode(this._appContainerEl);
-    this._wrapperEl.parentNode.insertBefore(this._originalContent, this._wrapperEl);
-    this._wrapperEl.parentNode.removeChild(this._wrapperEl);
+    this._wrapperEl.parentNode?.insertBefore(this._originalContent, this._wrapperEl);
+    this._wrapperEl.parentNode?.removeChild(this._wrapperEl);
   }
 
   get disableEditor() {
@@ -160,9 +186,6 @@ export class Recogito {
     this._app.current.readOnly = readOnly;
   }
 
-  removeAnnotation = annotation =>
-    this._app.current.removeAnnotation(new WebAnnotation(annotation));
-
   selectAnnotation = annotationOrId => {
     const selected = this._app.current.selectAnnotation(this._wrap(annotationOrId));
     return selected?.underlying;
@@ -176,13 +199,6 @@ export class Recogito {
 
   setAuthInfo = authinfo =>
     this._environment.user = authinfo;
-
-  /**
-   * Activates annotation or relationship drawing mode.
-   * @param mode a string, either ANNOTATION (default) or RELATIONS
-   */
-  setMode = mode =>
-    this._app.current.setMode(mode);
 
   setServerTime = timestamp =>
     this._environment.setServerTime(timestamp);

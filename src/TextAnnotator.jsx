@@ -30,6 +30,7 @@ export default class TextAnnotator extends Component {
       editorDisabled: this.props.config.disableEditor,
     }
 
+    this.extraEl = props.extraEl;
     this._editor = React.createRef();
   }
 
@@ -51,7 +52,7 @@ export default class TextAnnotator extends Component {
   componentDidMount() {
     this.highlighter = new Highlighter(this.props.contentEl, this.props.config.formatter);
 
-    this.selectionHandler = new SelectionHandler(this.props.contentEl, this.highlighter, this.props.config.readOnly);
+    this.selectionHandler = new SelectionHandler(this.props.contentEl, this.highlighter, this.props.config.readOnly, this.extraEl);
     this.selectionHandler.on('select', this.handleSelect);
 
     this.relationsLayer = new RelationsLayer(this.props.contentEl);
@@ -65,10 +66,13 @@ export default class TextAnnotator extends Component {
 
   componentWillUnmount() {
     document.removeEventListener('keydown', this.handleEscape);
+
+    // Destroy the selection handler to clean up event listeners
+    this.selectionHandler.destroy();
   }
 
   onChanged = () => {
-    // Disable selection outside of the editor 
+    // Disable selection outside of the editor
     // when user makes the first change
     this.selectionHandler.enabled = false;
   }
@@ -94,8 +98,10 @@ export default class TextAnnotator extends Component {
         selectedDOMElement: element
       }));
 
+      const selectionClone = selection.clone()
+      this.props.onSelect(selectionClone);
       if (!selection.isSelection)
-        this.props.onAnnotationSelected(selection.clone(), element);
+        this.props.onAnnotationSelected(selectionClone, element);
     } else {
       this.clearState();
     }
@@ -187,17 +193,17 @@ export default class TextAnnotator extends Component {
   }
 
   /** Common handler for annotation CREATE or UPDATE **/
-  onCreateOrUpdateAnnotation = method => (annotation, previous) => {
+  onCreateOrUpdateAnnotation = (method, silent = false) => (annotation, previous) => {
     this.clearState();
-
     this.selectionHandler.clearSelection();
     this.highlighter.addOrUpdateAnnotation(annotation, previous);
 
-    // Call CREATE or UPDATE handler
-    if (previous)
-      this.props[method](annotation.clone(), previous.clone());
-    else
-      this.props[method](annotation.clone(), this.overrideAnnotationId(annotation));
+    if (!silent) {
+      if (previous)
+        this.props[method](annotation.clone(), previous.clone());
+      else
+        this.props[method](annotation.clone(), this.overrideAnnotationId(annotation));
+    }
   }
 
   onDeleteAnnotation = annotation => {
@@ -210,6 +216,18 @@ export default class TextAnnotator extends Component {
 
     this.props.onAnnotationDeleted(annotation);
   }
+
+  highlightAnnotation = (id) => {
+    this.highlighter.highlightAnnotation(id);
+  };
+
+  unhighlightAnnotation = (id) => {
+    this.highlighter.unhighlightAnnotation(id);
+  };
+
+  setHighlightedAnnotation = (id) => {
+    this.highlighter.highlightedAnnotationId = id;
+  };
 
   /** Cancel button on annotation editor **/
   onCancelAnnotation = annotation => {
@@ -265,8 +283,12 @@ export default class TextAnnotator extends Component {
   /* External API */
   /****************/
 
-  addAnnotation = annotation => {
-    this.highlighter.addOrUpdateAnnotation(annotation.clone());
+  addAnnotation = (annotation, prevAnnotation, silent = false) => {
+    if (prevAnnotation) {
+      this.onCreateOrUpdateAnnotation('onAnnotationUpdated', silent)(annotation.clone(), prevAnnotation);
+    } else {
+      this.onCreateOrUpdateAnnotation('onAnnotationCreated', silent)(annotation.clone());
+    }
   }
 
   get disableSelect() {
@@ -274,10 +296,11 @@ export default class TextAnnotator extends Component {
   }
 
   set disableSelect(disable) {
-    if (disable)
-      this.props.contentEl.classList.add('r6o-noselect');
-    else
-      this.props.contentEl.classList.remove('r6o-noselect');
+    if (disable) {
+      this.props.contentEl?.classList.add('r6o-noselect');
+    } else {
+      this.props.contentEl?.classList.remove('r6o-noselect');
+    }
 
     this.selectionHandler.enabled = !disable;
   }

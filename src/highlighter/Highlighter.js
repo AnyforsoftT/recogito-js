@@ -7,59 +7,74 @@ export default class Highlighter {
   constructor(element, formatter) {
     this.el = element;
     this.formatter = formatter;
+    this.highlightedAnnotationId = '';
   }
 
-  init = annotations => new Promise((resolve, _) => {    
-    const startTime = performance.now();
+  init = (annotations) =>
+    new Promise((resolve, _) => {
+      const startTime = performance.now();
 
-    // Discard all annotations without a TextPositionSelector
-    const highlights = annotations.filter(a => a.selector('TextPositionSelector'));
+      // Discard annotations without a TextPositionSelector or of type 'shadow'
+      const highlights = annotations.filter(
+          (a) => a.selector('TextPositionSelector') && a.type !== 'shadow'
+      );
 
-    // Sorting bottom to top significantly speeds things up,
-    // because walkTextNodes will have a lot less to walk 
-    highlights.sort((a, b) => b.start - a.start);
+      // Sorting bottom to top significantly speeds things up,
+      // because walkTextNodes will have a lot less to walk
+      highlights.sort((a, b) => b.start - a.start);
 
-    // Render loop
-    const render = annotations => {
-      const batch = annotations.slice(0, RENDER_BATCH_SIZE);
-      const remainder = annotations.slice(RENDER_BATCH_SIZE);
+      // Render loop
+      const render = (annotations) => {
+        const batch = annotations.slice(0, RENDER_BATCH_SIZE);
+        const remainder = annotations.slice(RENDER_BATCH_SIZE);
 
-      requestAnimationFrame(() => {
-        batch.forEach(this._addAnnotation);
-        if (remainder.length > 0) {
-          render(remainder);
-        } else {
-          console.log(`Rendered ${highlights.length}, took ${performance.now() - startTime}ms`);
-          resolve();
-        }
-      });
+        requestAnimationFrame(() => {
+          batch.forEach(this._addAnnotation);
+          if (remainder.length > 0) {
+            render(remainder);
+          } else {
+            console.log(`Rendered ${highlights.length}, took ${performance.now() - startTime}ms`);
+            resolve();
+          }
+        });
+      };
+      render(highlights);
+    });
+
+  _addAnnotation = (annotation) => {
+    // Skip rendering if the annotation is of type 'shadow'
+    if (annotation.type === 'shadow') {
+      // Remove existing highlights for this annotation, if any
+      this.removeAnnotation(annotation);
+      return;
     }
 
-    render(highlights);
-  })
-
-  _addAnnotation = annotation => {
     try {
-      const [ domStart, domEnd ] = this.charOffsetsToDOMPosition([ annotation.start, annotation.end ]);
+      const [domStart, domEnd] = this.charOffsetsToDOMPosition([annotation.start, annotation.end]);
 
       const range = document.createRange();
       range.setStart(domStart.node, domStart.offset);
       range.setEnd(domEnd.node, domEnd.offset);
 
       const spans = this.wrapRange(range);
-      this.applyStyles(annotation, spans);
+
       this.bindAnnotation(annotation, spans);
+      this.applyStyles(annotation, spans);
     } catch (error) {
-      console.warn('Could not render annotation')
+      console.warn('Could not render annotation');
       console.warn(error);
       console.warn(annotation.underlying);
     }
-  }
+  };
 
-  findAnnotationSpans = annotationOrId => {
-    const id = annotationOrId.id || annotationOrId;
-    const spans =Array.from(document.querySelectorAll(`.r6o-annotation[data-id="${id}"]`));
-    return spans;
+  findAnnotationSpans = (annotationOrId) => {
+    const id = annotationOrId?.id || annotationOrId;
+    const elements = document.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
+    if (!elements || elements?.length === 0) {
+      console.warn(`No elements found for annotation with id: ${id}`);
+      return [];
+    }
+    return Array.from(elements);
   }
 
   getAllAnnotations = () => {
@@ -69,20 +84,21 @@ export default class Highlighter {
   }
 
   addOrUpdateAnnotation = (annotation, maybePrevious) => {
-    // TODO index annotation to make this faster
     const annoSpans = this.findAnnotationSpans(annotation);
     const prevSpans = maybePrevious ? this.findAnnotationSpans(maybePrevious) : [];
     const spans = uniqueItems(annoSpans.concat(prevSpans));
 
+    // Remove existing highlights
     if (spans.length > 0) {
-      // naive approach
       this._unwrapHighlightings(spans);
       this.el.normalize();
-      this._addAnnotation(annotation);
-    } else {
+    }
+
+    // Only add annotation if it's not of type 'shadow'
+    if (annotation.type !== 'shadow') {
       this._addAnnotation(annotation);
     }
-  }
+  };
 
   removeAnnotation = annotation => {
     const spans = this.findAnnotationSpans(annotation);
@@ -98,16 +114,16 @@ export default class Highlighter {
     this.el.normalize();
   }
 
-  /** 
-   * Forces a new ID on the annotation with the given ID. This method handles 
-   * the ID update within the Highlighter ONLY. It's up to the application to 
-   * keep the RelationsLayer in sync! 
-   * 
+  /**
+   * Forces a new ID on the annotation with the given ID. This method handles
+   * the ID update within the Highlighter ONLY. It's up to the application to
+   * keep the RelationsLayer in sync!
+   *
    * @returns the updated annotation for convenience
    */
-  overrideId = (originalId, forcedId) => {    
+  overrideId = (originalId, forcedId) => {
     const allSpans = document.querySelectorAll(`.r6o-annotation[data-id="${originalId}"]`);
-    const annotation = allSpans[0].annotation; 
+    const annotation = allSpans[0].annotation;
 
     const updatedAnnotation = annotation.clone({ id : forcedId });
     this.bindAnnotation(updatedAnnotation, allSpans);
@@ -133,16 +149,31 @@ export default class Highlighter {
     }
   }
 
+  highlightAnnotation = (id) => {
+    const matchingSpans = document.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
+    matchingSpans.forEach((span) => {
+      span?.classList.add('hover-annotation');
+    });
+  };
+
+  unhighlightAnnotation = (id) => {
+    const matchingSpans = document.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
+    matchingSpans.forEach((span) => {
+      span?.classList.remove('hover-annotation');
+    });
+  };
+
+
   /**
    * Apply styles using this highlighter's formatter, which is a user-defined
    * function that takes an annotation as input, and returns either a string,
    * or an object. If a string is returned, this will be appended to the
    * annotation element CSS class list. Otherwise, the object can have the
    * following properties:
-   * 
+   *
    * - 'className' added to the CSS class list
    * - 'data-*' added as data attributes
-   * - 'style' a list of CSS styles (in the form of a string) 
+   * - 'style' a list of CSS styles (in the form of a string)
    */
   applyStyles = (annotation, spans) => {
     let extraClasses = '';
@@ -164,11 +195,69 @@ export default class Highlighter {
         if (format.hasOwnProperty(key) && key.startsWith('data-')) {
           spans.forEach(span => span.setAttribute(key, format[key]));
         }
-      }  
+      }
     }
-    // apply extra classes if there are any; ensure .r6o-annotation added regardless
-    spans.forEach(span => span.className = `r6o-annotation ${extraClasses}`.trim());
-  }
+
+    // Helper function to collect background colors from the current element and all its parents
+    const getParentColors = (element) => {
+      let colors = new Set();  // Using a Set to ensure unique colors
+      let currentElement = element.parentElement;
+
+      // Traverse upwards and collect background colors from all parents
+      while (currentElement && currentElement?.classList.contains('r6o-annotation')) {
+        const bgColor = window.getComputedStyle(currentElement).backgroundColor;
+        colors.add(bgColor);  // Add the color to the Set (automatically handles duplicates)
+        currentElement = currentElement.parentElement;
+      }
+
+      return Array.from(colors); // Convert the Set back to an array
+    };
+
+    // Function to handle mouse over on the highest parent annotation
+    const handleMouseOver = (span) => {
+      const id = span.getAttribute('data-id');
+      const isHighestParent = !span.closest('.r6o-annotation:not([data-id="' + id + '"])');
+      if (this.highlightedAnnotationId) {
+        const highlightedChild = span.querySelector('.r6o-annotation[data-id="' + this.highlightedAnnotationId + '"]');
+        if (highlightedChild) {
+          return;
+        }
+      }
+      if (isHighestParent) {
+        this.highlightAnnotation(id);
+      }
+    };
+
+    const handleMouseOut = (span) => {
+      const id = span.getAttribute('data-id');
+      const isHighestParent = !span.closest('.r6o-annotation:not([data-id="' + id + '"])');
+      if (isHighestParent && id !== this.highlightedAnnotationId) {
+        this.unhighlightAnnotation(id);
+      }
+    };
+
+    spans.forEach(span => {
+      // Get the background colors of the current span and all its parents
+      const parentColors = getParentColors(span);
+
+      if (parentColors.length > 0) {
+        // Map each color into a separate linear-gradient and join them with a comma
+        const gradientColors = parentColors
+            .map(color => `linear-gradient(45deg, ${color}, ${color})`)
+            .join(', ');
+
+        // Apply multiple linear gradients, one for each parent color
+        span.style.backgroundImage = gradientColors;
+      }
+
+      // Add event listeners for hover effect
+      span.addEventListener('mouseover', () => handleMouseOver(span));
+      span.addEventListener('mouseout', () => handleMouseOut(span));
+
+      // Add the class name for this annotation
+      span.className = `r6o-annotation ${extraClasses}`.trim();
+    });
+  };
 
   bindAnnotation = (annotation, elements) => {
     elements.forEach(el => {
@@ -184,7 +273,7 @@ export default class Highlighter {
     var runningOffset = 0;
     let n = ni.nextNode();
     while (n != null) {
-      runningOffset += n.textContent.length;
+      runningOffset += n.textContent?.length;
       nodes.push(n);
       if (runningOffset > stopOffset) {
         break;
@@ -200,7 +289,7 @@ export default class Highlighter {
     const textNodeProps = (() => {
       let start = 0;
       return this.walkTextNodes(this.el, maxOffset).map(function(node) {
-        var nodeLength = node.textContent.length,
+        var nodeLength = node.textContent?.length,
             nodeProps = { node: node, start: start, end: start + nodeLength };
 
         start += nodeLength;
@@ -264,11 +353,19 @@ export default class Highlighter {
   wrapRange = (range, commonRoot) => {
     const root = commonRoot ? commonRoot : this.el;
 
-    const surround = range => {
-      var wrapper = document.createElement('SPAN');
-      range.surroundContents(wrapper);
-      return wrapper;
+    const surround = (range) => {
+      const wrapper = document.createElement('SPAN');
+      try {
+        range.surroundContents(wrapper);
+        return wrapper;
+      } catch (error) {
+        return null
+      }
     };
+
+    if (range.startContainer.length === range.startOffset) {
+      return []
+    }
 
     if (range.startContainer === range.endContainer) {
       return [ surround(range) ];
@@ -290,14 +387,15 @@ export default class Highlighter {
       var endWrapper = surround(endRange);
 
       // And wrap nodes in between, if any
-      var centerWrappers = nodesBetween.reverse().map(function(node) {
+      const isValidRange = startWrapper && endWrapper;
+      var centerWrappers = isValidRange ? nodesBetween.reverse().map(function(node) {
         const wrapper = document.createElement('SPAN');
         node.parentNode.insertBefore(wrapper, node);
         wrapper.appendChild(node);
         return wrapper;
-      });
+      }) : []
 
-      return [ startWrapper ].concat(centerWrappers,  [ endWrapper ]);
+      return [ startWrapper ].concat(centerWrappers,  [ endWrapper ]).filter(Boolean);
     }
   }
 
@@ -309,7 +407,7 @@ export default class Highlighter {
 
           annotations.push(element.annotation);
 
-          return (parent.classList.contains('r6o-annotation')) ?
+          return (parent?.classList.contains('r6o-annotation')) ?
             getAnnotationsRecursive(parent, annotations) : annotations;
         },
 
