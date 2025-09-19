@@ -62,7 +62,7 @@ export default class Highlighter {
     } catch (error) {
       console.warn('Could not render annotation');
       console.warn(error);
-      console.warn(annotation.underlying);
+      console.warn(annotation?.underlying);
     }
   };
 
@@ -70,7 +70,6 @@ export default class Highlighter {
     const id = annotationOrId?.id || annotationOrId;
     const elements = document.querySelectorAll(`.r6o-annotation[data-id="${id}"]`);
     if (!elements || elements?.length === 0) {
-      console.warn(`No elements found for annotation with id: ${id}`);
       return [];
     }
     return Array.from(elements);

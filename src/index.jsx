@@ -85,23 +85,23 @@ export class Recogito {
   }
 
   handleSelect = (annotation) => {
-    this._emitter.emit('select', annotation.underlying);
+    this._emitter.emit('select', annotation?.underlying);
   };
 
   handleAnnotationSelected = (annotation, element) =>
-    this._emitter.emit('selectAnnotation', annotation.underlying, element);
+    this._emitter.emit('selectAnnotation', annotation?.underlying, element);
 
   handleAnnotationCreated = (annotation, overrideId) =>
-    this._emitter.emit('createAnnotation', annotation.underlying, overrideId);
+    this._emitter.emit('createAnnotation', annotation?.underlying, overrideId);
 
   handleAnnotationUpdated = (annotation, previous) =>
-    this._emitter.emit('updateAnnotation', annotation.underlying, previous.underlying);
+    this._emitter.emit('updateAnnotation', annotation?.underlying, previous?.underlying);
 
   handleAnnotationDeleted = annotation =>
-    this._emitter.emit('deleteAnnotation', annotation.underlying);
+    this._emitter.emit('deleteAnnotation', annotation?.underlying);
 
   handleCancelSelected = annotation =>
-    this._emitter.emit('cancelSelected', annotation.underlying);
+    this._emitter.emit('cancelSelected', annotation?.underlying);
 
   /******************/
   /*  External API  */
@@ -164,7 +164,7 @@ export class Recogito {
 
   getAnnotations = () => {
     const annotations = this._app.current.getAnnotations();
-    return annotations.map(a => a.underlying);
+    return annotations.map(a => a?.underlying);
   }
 
   loadAnnotations = (url, requestArgs) => fetch(url, requestArgs)
