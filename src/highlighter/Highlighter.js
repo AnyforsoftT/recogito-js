@@ -12,8 +12,6 @@ export default class Highlighter {
 
   init = (annotations) =>
     new Promise((resolve, _) => {
-      const startTime = performance.now();
-
       // Discard annotations without a TextPositionSelector or of type 'shadow'
       const highlights = annotations.filter(
           (a) => a.selector('TextPositionSelector') && a.type !== 'shadow'
@@ -33,7 +31,6 @@ export default class Highlighter {
           if (remainder.length > 0) {
             render(remainder);
           } else {
-            console.log(`Rendered ${highlights.length}, took ${performance.now() - startTime}ms`);
             resolve();
           }
         });
@@ -326,8 +323,8 @@ export default class Highlighter {
   calculateDomPositionWithin = (textNodeProperties, charOffsets) => {
     var positions = [];
 
-    textNodeProperties.forEach(function(props, i) {
-      charOffsets.forEach(function(charOffset, j)  {
+    textNodeProperties.forEach(function(props) {
+      charOffsets.forEach(function(charOffset)  {
         if (charOffset >= props.start && charOffset <= props.end) {
           // Don't attach nodes for the same charOffset twice
           var previousOffset = (positions.length > 0) ?
