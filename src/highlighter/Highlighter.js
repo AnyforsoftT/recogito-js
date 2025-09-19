@@ -33,7 +33,6 @@ export default class Highlighter {
           if (remainder.length > 0) {
             render(remainder);
           } else {
-            console.log(`Rendered ${highlights.length}, took ${performance.now() - startTime}ms`);
             resolve();
           }
         });
@@ -363,9 +362,10 @@ export default class Highlighter {
       }
     };
 
-    if (range.startContainer.length === range.startOffset) {
-      return []
-    }
+    // TODO: disabled due to latex select issue
+    // if (range.startContainer.length === range.startOffset) {
+    //   return []
+    // }
 
     if (range.startContainer === range.endContainer) {
       return [ surround(range) ];
