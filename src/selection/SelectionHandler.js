@@ -72,6 +72,9 @@ export default class SelectionHandler extends EventEmitter {
     // Add event listener for clicks outside the content element
     this.document.addEventListener('mousedown', this._onDocumentMouseDown);
 
+    // Add keyboard event listeners for Shift+Arrow selections
+    this.document.addEventListener('keyup', this._onKeyUp);
+
     if (IS_TOUCH) {
       enableTouch(
         element,
@@ -103,6 +106,8 @@ export default class SelectionHandler extends EventEmitter {
     this.el.removeEventListener('mousedown', this._onMouseDown);
     this.el.removeEventListener('mouseup', this._onMouseUp);
     this.document.removeEventListener('mousedown', this._onDocumentMouseDown);
+    this.document.removeEventListener('keyup', this._onKeyUp);
+    // this.document.removeEventListener('selectionchange', this._onSelectionChange);
   }
 
   _onMouseDown = evt => {
@@ -167,7 +172,55 @@ export default class SelectionHandler extends EventEmitter {
       if (!clickedInsideContent && !clickedInsideExtra) {
         this.clearSelection();
       }
-    }}
+    }
+  }
+
+  _onKeyUp = (evt) => {
+    if (this.isEnabled && !this.readOnly) {
+      // Check if Shift key was released (indicating end of keyboard selection)
+      if (evt.key === 'Shift') {
+        // Small delay to ensure selection is complete
+        setTimeout(() => {
+          this._processSelection();
+        }, 50);
+      }
+    }
+  }
+
+  _processSelection = () => {
+    const selection = this.document.getSelection();
+
+    if (selection && !selection.isCollapsed && selection.rangeCount > 0) {
+      const selectedRange = selection.getRangeAt(0);
+
+      // Check if selection is within our content area
+      if (contains(this.el, selectedRange?.commonAncestorContainer)) {
+        const stub = rangeToSelection(selectedRange, this.el);
+
+        const spans = this.highlighter.wrapRange(selectedRange);
+        spans.forEach(span => span.className = 'r6o-selection');
+        this._hideNativeSelection();
+
+        const exactOverlaps = getExactOverlaps(stub, spans);
+
+        if (exactOverlaps.length > 0) {
+          // User selected existing - reuse top-most original to avoid stratification
+          const top = exactOverlaps[0];
+
+          this.clearSelection();
+          this.emit('select', {
+            selection: top,
+            element: this.document.querySelector(`.r6o-annotation[data-id="${top.id}"]`)
+          });
+        } else {
+          this.emit('select', {
+            selection: stub,
+            element: selectedRange
+          });
+        }
+      }
+    }
+  }
 
   _hideNativeSelection = () => {
     this.el?.classList.add('r6o-hide-selection');
