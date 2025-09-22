@@ -352,6 +352,27 @@ export default class Highlighter {
     const root = commonRoot ? commonRoot : this.el;
 
     const surround = (range) => {
+      // Check if the range contains only images
+      const contents = range.cloneContents();
+      const images = contents.querySelectorAll('img');
+      const textNodes = contents.childNodes;
+      // If selection contains only images and no text, don't wrap
+      let hasOnlyImages = images.length > 0;
+      for (let i = 0; i < textNodes.length; i++) {
+        const node = textNodes[i];
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim()) {
+          hasOnlyImages = false;
+          break;
+        }
+        if (node.nodeType === Node.ELEMENT_NODE && node.tagName !== 'IMG') {
+          hasOnlyImages = false;
+          break;
+        }
+      }
+      if (hasOnlyImages) {
+        console.log('Skipping highlight: selection contains only images');
+        return null;
+      }
       const wrapper = document.createElement('SPAN');
       try {
         range.surroundContents(wrapper);
@@ -361,10 +382,24 @@ export default class Highlighter {
       }
     };
 
-    // TODO: disabled due to latex select issue
-    // if (range.startContainer.length === range.startOffset) {
-    //   return []
-    // }
+    // TODO: list of class to prevent bugs for start/end container select when user fast click or select in wrong way.
+    //  But at the same time allow latex container cause latex can be start/end container at the same time due to enormous wrapped elements for formulas
+    if (range.startContainer.length === range.startOffset) {
+      // Skip early return if commonAncestorContainer has latex-related classes
+      const commonAncestor = range.commonAncestorContainer;
+      const hasLatexClass = commonAncestor && commonAncestor.classList &&
+        (commonAncestor.classList.contains('__Latex__') ||
+        commonAncestor.classList.contains('latex') ||
+         commonAncestor.classList.contains('katex-display') ||
+         commonAncestor.classList.contains('base') ||
+         commonAncestor.classList.contains('mord') ||
+         commonAncestor.classList.contains('content') ||
+         commonAncestor.classList.contains('act-digital-layout') ||
+         commonAncestor.classList.contains('katex'))
+      if (!hasLatexClass) {
+        return []
+      }
+    }
 
     if (range.startContainer === range.endContainer) {
       return [ surround(range) ];
