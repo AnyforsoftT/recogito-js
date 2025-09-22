@@ -136,13 +136,32 @@ export default class SelectionHandler extends EventEmitter {
          const selectedRange = selection.getRangeAt(0)
 
         if (contains(this.el, selectedRange?.commonAncestorContainer)) {
-          const stub = rangeToSelection(selectedRange, this.el);
+          // Check if selection would break LaTeX before processing
+          const checkLaTeXProtection = (range) => {
+            const commonAncestor = range.commonAncestorContainer;
+            let currentNode = commonAncestor;
+            while (currentNode && currentNode !== document.body) {
+              if (currentNode.classList &&
+                currentNode.classList.contains('content')
+              ) {
+                console.log('Selection within LaTeX detected, skipping range wrapping to prevent formula reset');
+                return true;
+              }
+              currentNode = currentNode.parentElement;
+            }
+            return false;
+          };
 
-          const spans = this.highlighter.wrapRange(selectedRange);
-          spans.forEach(span => span.className = 'r6o-selection');
+          const stub = rangeToSelection(selectedRange, this.el);
+          // Skip range wrapping if it would break LaTeX
+          const isLatexProtected = checkLaTeXProtection(selectedRange);
+          const spans = isLatexProtected ? [] : this.highlighter.wrapRange(selectedRange);
+          // Filter out null spans and ensure spans array exists
+          const validSpans = spans ? spans.filter(span => span !== null) : [];
+          validSpans.forEach(span => span.className = 'r6o-selection');
           this._hideNativeSelection();
 
-          const exactOverlaps = getExactOverlaps(stub, spans)
+          const exactOverlaps = getExactOverlaps(stub, validSpans)
 
           if (exactOverlaps.length > 0) {
             // User selected existing - reuse top-most original to avoid stratification
