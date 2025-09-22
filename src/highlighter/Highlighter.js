@@ -387,17 +387,11 @@ export default class Highlighter {
     if (range.startContainer.length === range.startOffset) {
       // Skip early return if commonAncestorContainer has latex-related classes
       const commonAncestor = range.commonAncestorContainer;
-      const hasLatexClass = commonAncestor && commonAncestor.classList &&
-        (commonAncestor.classList.contains('__Latex__') ||
-        commonAncestor.classList.contains('latex') ||
-         commonAncestor.classList.contains('katex-display') ||
-         commonAncestor.classList.contains('base') ||
-         commonAncestor.classList.contains('mord') ||
-         commonAncestor.classList.contains('content') ||
-         commonAncestor.classList.contains('act-digital-layout') ||
-         commonAncestor.classList.contains('katex'))
-      if (!hasLatexClass) {
-        return []
+      const hasPreventedMutationClass = commonAncestor && commonAncestor.classList || commonAncestor.classList.contains('content')
+
+      if (hasPreventedMutationClass) {
+        // seems working fine after fix selection that already prevent annotation error. but leave it for now here
+        // return []
       }
     }
 
