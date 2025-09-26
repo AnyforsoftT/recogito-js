@@ -144,7 +144,6 @@ export default class SelectionHandler extends EventEmitter {
               if (currentNode.classList &&
                 currentNode.classList.contains('content')
               ) {
-                console.log('Selection within LaTeX detected, skipping range wrapping to prevent formula reset');
                 return true;
               }
               currentNode = currentNode.parentElement;
