@@ -67,6 +67,7 @@ export class Recogito {
     this._wrapperEl.appendChild(this._appContainerEl);
 
     setLocale(config.locale);
+    console.log('init act-d highlighter')
 
     ReactDOM.render(
       <TextAnnotator
