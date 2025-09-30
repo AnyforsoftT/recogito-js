@@ -192,10 +192,41 @@ export default class TextAnnotator extends Component {
     }
   }
 
+  /** Position cursor at the end of an annotation **/
+  positionCursorAtAnnotationEnd = (annotation) => {
+    try {
+      // Get the DOM position of the annotation end
+      const [domStart, domEnd] = this.highlighter.charOffsetsToDOMPosition([annotation.start, annotation.end]);
+
+      // Create a collapsed range at the end of the annotation
+      const range = document.createRange();
+      range.setStart(domEnd.node, domEnd.offset);
+      range.collapse(true);
+
+      // Set the selection to this range
+      const selection = document.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+
+      // Focus the content element to ensure cursor is visible
+      if (this.props.contentEl) {
+        this.props.contentEl.focus();
+      }
+    } catch (error) {
+      console.warn('Could not position cursor at annotation end:', error);
+      // Fallback to clearing selection
+      this.selectionHandler.clearSelection();
+    }
+  }
+
   /** Common handler for annotation CREATE or UPDATE **/
   onCreateOrUpdateAnnotation = (method, silent = false) => (annotation, previous) => {
     this.clearState();
-    this.selectionHandler.clearSelection();
+    console.log('onCreateOrUpdateAnnotation');
+
+    // Position cursor at end of annotation instead of clearing selection
+    this.positionCursorAtAnnotationEnd(annotation);
+
     this.highlighter.addOrUpdateAnnotation(annotation, previous);
 
     if (!silent) {
