@@ -10,6 +10,7 @@ import TextAnnotator from './TextAnnotator';
 import { deflateHTML } from './utils';
 
 import '@recogito/recogito-client-core/themes/default';
+import {logPlugin} from "@babel/preset-env/lib/debug";
 
 /**
  * The entrypoint into the application. Provides the
@@ -18,6 +19,8 @@ import '@recogito/recogito-client-core/themes/default';
 export class Recogito {
 
   constructor(config) {
+    console.log('recogito-v1')
+
     // API calls to this instance are forwarded through a ref
     this._app = React.createRef();
 
