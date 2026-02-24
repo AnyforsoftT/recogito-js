@@ -113,6 +113,15 @@ export default class SelectionHandler extends EventEmitter {
   _onMouseDown = evt => {
     // left click only
     if (evt.button === 0) {
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const target = evt.target;
+      const isClickingOnToolbar = target.closest('#popover') || target.closest('.r6o-annotation');
+
+      // Safari-specific: Don't clear selection if clicking on toolbar or annotation
+      if (isSafari && isClickingOnToolbar) {
+        return;
+      }
+
       this.clearSelection();
     }
   }
@@ -140,11 +149,19 @@ export default class SelectionHandler extends EventEmitter {
           const checkLaTeXProtection = (range) => {
             const commonAncestor = range.commonAncestorContainer;
             let currentNode = commonAncestor;
+
+            // Check if we're inside a LaTeX-specific element (not the general content container)
             while (currentNode && currentNode !== document.body) {
-              if (currentNode.classList &&
-                currentNode.classList.contains('content')
-              ) {
-                return true;
+              if (currentNode.classList) {
+                // Check for LaTeX-specific classes, not the general 'content' class
+                const hasLatexClass = currentNode.classList.contains('katex') ||
+                                     currentNode.classList.contains('latex-container') ||
+                                     currentNode.classList.contains('katex-html') ||
+                                     currentNode.classList.contains('katex-mathml');
+
+                if (hasLatexClass) {
+                  return true;
+                }
               }
               currentNode = currentNode.parentElement;
             }
@@ -157,6 +174,7 @@ export default class SelectionHandler extends EventEmitter {
           const spans = isLatexProtected ? [] : this.highlighter.wrapRange(selectedRange);
           // Filter out null spans and ensure spans array exists
           const validSpans = spans ? spans.filter(span => span !== null) : [];
+
           validSpans.forEach(span => span.className = 'r6o-selection');
           this._hideNativeSelection();
 
@@ -242,6 +260,12 @@ export default class SelectionHandler extends EventEmitter {
 
   _hideNativeSelection = () => {
     this.el?.classList.add('r6o-hide-selection');
+
+    // Safari-specific: Force a reflow to ensure CSS is applied
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (isSafari) {
+      void this.el?.offsetHeight;
+    }
   }
 
   removeSelectionSpans = (element) =>  {

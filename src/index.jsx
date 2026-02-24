@@ -19,7 +19,6 @@ import {logPlugin} from "@babel/preset-env/lib/debug";
 export class Recogito {
 
   constructor(config) {
-    console.log('recogito-v1')
 
     // API calls to this instance are forwarded through a ref
     this._app = React.createRef();

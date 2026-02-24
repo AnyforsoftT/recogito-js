@@ -19,7 +19,11 @@
   background: transparent;
 }
 
-.r6o-hide-selection::-moz-selection .r6o-hide-selection ::-moz-selection{
+.r6o-hide-selection::-webkit-selection, .r6o-hide-selection ::-webkit-selection {
+  background: transparent;
+}
+
+.r6o-hide-selection::-moz-selection, .r6o-hide-selection ::-moz-selection {
   background: transparent;
 }
 
