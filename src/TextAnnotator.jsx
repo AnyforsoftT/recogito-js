@@ -222,9 +222,11 @@ export default class TextAnnotator extends Component {
   /** Common handler for annotation CREATE or UPDATE **/
   onCreateOrUpdateAnnotation = (method, silent = false) => (annotation, previous) => {
     this.clearState();
-    console.log('onCreateOrUpdateAnnotation');
 
-    // Position cursor at end of annotation instead of clearing selection
+    // Clear selection to remove .r6o-selection spans
+    this.selectionHandler.clearSelection();
+    
+    // Position cursor at end of annotation
     this.positionCursorAtAnnotationEnd(annotation);
 
     this.highlighter.addOrUpdateAnnotation(annotation, previous);

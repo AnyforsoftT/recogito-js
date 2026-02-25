@@ -26,6 +26,8 @@ export class Recogito {
     // Event handling via tiny-emitter
     this._emitter = new Emitter();
 
+    console.log('Init Recogito version 2.0.0');
+
     // Environment settings container
     this._environment = createEnvironment();
 
